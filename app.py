@@ -2,6 +2,9 @@ from pathlib import Path
 
 import joblib
 import streamlit as st
+import hashlib
+import io
+import requests
 
 st.set_page_config(
     page_title="Consumer Complaint Classifier",
@@ -12,7 +15,29 @@ st.set_page_config(
 
 @st.cache_resource
 def load_model():
-    return joblib.load(Path(__file__).parent / "baseline.joblib")
+    url = (
+        "https://drive.google.com/uc?export=download"
+        "&id=1GGGIS_7Zle6LmxYKm2GpVa1qrt_Be5_V"
+    )
+
+    response = requests.get(url, timeout=60)
+    response.raise_for_status()
+
+    model_bytes = response.content
+
+    expected_hash = (
+        "25da4ae0e5193de5c5d06694de6d93c"
+        "700a5d96bf185cdd4ef0ee6ace64896b2"
+    )
+
+    actual_hash = hashlib.sha256(model_bytes).hexdigest()
+
+    if actual_hash != expected_hash:
+        raise ValueError(
+            "The downloaded model does not match the expected file."
+        )
+
+    return joblib.load(io.BytesIO(model_bytes))
 
 
 model = load_model()
